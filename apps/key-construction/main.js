@@ -254,6 +254,9 @@ function render() {
             window.open(url);
         }
     } else {
+        ctx.fillStyle = "yellow";
+        ctx.font = "30px Futura";
+        ctx.fillText("Time: " + parseFloat(Math.round((time/1000.0) * 100) / 100).toFixed(2), 10, 1060);
         window.requestAnimationFrame(render);
     }
 }
