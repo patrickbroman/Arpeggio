@@ -250,7 +250,7 @@ function render() {
             window.requestAnimationFrame(render);
         } else {
             var output = gEncoder.compile();
-            var url = (window.webkitURL || window.URL).createObjectURL(output);
+            var url = window.URL.createObjectURL(output);
             window.open(url);
         }
     } else {
