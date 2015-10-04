@@ -1,6 +1,6 @@
 
-var RECORDING = true;
-var RECORDING_SECONDS = 60*4;
+var RECORDING = Config.recording;
+var RECORDING_SECONDS = Config.recordingDuration;
 
 var CHROMATIC_NOTE_Y = 50;
 var CHROMATIC_NOTE_WIDTH = 120;
@@ -51,7 +51,7 @@ function init() {
       keys.push(key);
     }
 
-    var key = keys[3];
+    var key = keys[Config.keyIndex];
 
     // Populate the container
 
@@ -243,7 +243,6 @@ function render() {
     ctx.fillRect(0, 0, gCanvas.width, gCanvas.height);
     ctx.restore();
     gContainer.render(ctx, frame);
-    console.log("rendered.");
     if(RECORDING) {
         gEncoder.add(ctx);
         console.log("added frame " + frame);
