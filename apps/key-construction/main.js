@@ -1,29 +1,34 @@
-
 var CHROMATIC_NOTE_Y = 50;
 var CHROMATIC_NOTE_WIDTH = 120;
 var CHROMATIC_NOTE_SPACING = 20;
 var CHROMATIC_NOTE_FONTSIZE = 60;
 
 var KEY_NOTE_Y = 200;
-var KEY_NOTE_WIDTH = 196;
-var KEY_NOTE_SPACING = 58;
+var KEY_NOTE_WIDTH = 146;
+var KEY_NOTE_SPACING = 108;
 var KEY_NOTE_FONTSIZE = 80;
 
-var DELAY_PER_NOTE = 90;
-var MOVING_NOTES_START_TIME = 240;
+var DELAY_PER_NOTE = 80;
+var MOVING_NOTES_START_TIME = 340;
 var MOVING_NOTES_DURATION = 40;
 var MOVING_NOTES_END_TIME = MOVING_NOTES_START_TIME + MOVING_NOTES_DURATION;
 
-var CHORD_ANIM_START = 920;
+var KILL_CHROMATIC_START_TIME = 900;
+var KILL_CHROMATIC_END_TIME = 950;
+
+var CHORD_ANIM_START = 950;
 var CHORD_ANIM_END = 1000;
-var DELAY_PER_CHORD = 240;
+var DELAY_PER_CHORD = 340;
 var DELAY_PER_CHORD_NOTE = 40;
 var CHORD_NOTE_SPACING = 90;
 
 var CHORD_NAME_FONTSIZE = 70;
 var CHORD_NAME_SPACING = 60;
+var CHORD_NAME_START_TIME = 1200;
+var CHORD_NAME_END_TIME = CHORD_NAME_START_TIME + 30;
+var CHORD_NAME_DELAY = DELAY_PER_CHORD;// + DELAY_PER_NOTE*3;
 
-var HORIZONTAL_LINE_MARGIN = 170;
+var HORIZONTAL_LINE_MARGIN = 120;
 
 var SEVENTHS_ENABLED = false;
 
@@ -104,7 +109,7 @@ function init() {
                     "fontOpacity" : makeInterpolator(0.35, 0.0),
                 }
             )
-            , 860, 900);
+            , KILL_CHROMATIC_START_TIME, KILL_CHROMATIC_END_TIME);
 
         }
         gContainer.addObject(noteWidget);
@@ -141,33 +146,76 @@ function init() {
                     "y" : makeInterpolator(pos.y, chordNoteY),
                 }
             ), startTime, endTime);
+
             noteWidget.addAnimation(makeAnimation(
                 {
                     "fontOpacity" : makeInterpolator(0.0, 1.0),
                 }
             )
-            , startTime, startTime + 50);
+            , startTime, endTime);
 
             gContainer.addObject(noteWidget);
+
+            // highlight line widget
+            var highlightWidget = new TextWidget(pos.x, 50, KEY_NOTE_WIDTH, KEY_NOTE_WIDTH, "" + (j+1));
+            highlightWidget.backgroundColor = "red";
+            highlightWidget.backgroundOpacity = 0.0;
+            highlightWidget.fontOpacity = 0.0;
+            gContainer.addObject(highlightWidget);
             chordNoteY += CHORD_NOTE_SPACING;
+
+            startTime = CHORD_ANIM_START + i * DELAY_PER_CHORD;
+            endTime = CHORD_ANIM_END + i * DELAY_PER_CHORD;
+
+            highlightWidget.addAnimation(makeAnimation(
+                {
+                    "backgroundOpacity" : makeInterpolator(0.0, 1.0),
+                    "fontOpacity" : makeInterpolator(0.0, 1.0)
+                }
+            )
+            , startTime, endTime);
+
+            highlightWidget.addAnimation(makeAnimation(
+                {
+                    "backgroundOpacity" : makeInterpolator(1.0, 0.0),
+                    "fontOpacity" : makeInterpolator(1.0, 0.0)
+                }
+            )
+            , startTime+200, endTime+200);
+
+
         }
+        // Widget for chord name
         var chordName = SEVENTHS_ENABLED ? key.chords[i].seventhName : key.chords[i].triadName;
         var noteWidget = new TextWidget(chordNoteX, chordNoteY + CHORD_NAME_SPACING, KEY_NOTE_WIDTH, KEY_NOTE_WIDTH, chordName);
         noteWidget.textColor = "red";
         noteWidget.backgroundColor = "rgba(0, 0, 0, 0.0)";
-        noteWidget.fontOpacity = 1.0;
+        noteWidget.fontOpacity = 0.0;
         noteWidget.fontSize = CHORD_NAME_FONTSIZE;
         gContainer.addObject(noteWidget);
+
+        noteWidget.addAnimation(makeAnimation(
+            {
+                "fontOpacity" : makeInterpolator(0.0, 1.0),
+            }
+        )
+        , CHORD_NAME_START_TIME + i*CHORD_NAME_DELAY, CHORD_NAME_END_TIME + i*CHORD_NAME_DELAY);
     }
 
-
     // widget for horizontal line
-    var lineWidget = new TextWidget(HORIZONTAL_LINE_MARGIN, 550, gCanvas.width-2*HORIZONTAL_LINE_MARGIN, 16, "");
+    var lineWidget = new TextWidget(HORIZONTAL_LINE_MARGIN, 524, gCanvas.width-2*HORIZONTAL_LINE_MARGIN, 16, "");
     lineWidget.textColor = "red";
     lineWidget.backgroundColor = "red";
+    lineWidget.backgroundOpacity = 0.0;
     lineWidget.fontOpacity = 1.0;
     gContainer.addObject(lineWidget);
 
+    lineWidget.addAnimation(makeAnimation(
+        {
+            "backgroundOpacity" : makeInterpolator(0.0, 1.0),
+        }
+    )
+    , CHORD_NAME_START_TIME, CHORD_NAME_END_TIME);
 
     window.requestAnimationFrame(render);
     gStartTime = performance.now();
