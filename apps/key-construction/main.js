@@ -1,3 +1,7 @@
+
+var RECORDING = true;
+var RECORDING_SECONDS = 60*4;
+
 var CHROMATIC_NOTE_Y = 50;
 var CHROMATIC_NOTE_WIDTH = 120;
 var CHROMATIC_NOTE_SPACING = 20;
@@ -217,6 +221,11 @@ function init() {
     )
     , CHORD_NAME_START_TIME, CHORD_NAME_END_TIME);
 
+    if(RECORDING) {
+        gEncoder = new Whammy.Video(60);
+        gFrame = 0;
+    }
+
     window.requestAnimationFrame(render);
     gStartTime = performance.now();
 }
@@ -225,10 +234,27 @@ function render() {
     var ctx = gCanvas.getContext("2d");
     var time = performance.now() - gStartTime;
     var frame = Math.floor(time*60.0/1000.0);
+    if(RECORDING) {
+        frame = gFrame;
+        gFrame++;
+    }
     ctx.save();
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, gCanvas.width, gCanvas.height);
     ctx.restore();
     gContainer.render(ctx, frame);
-    window.requestAnimationFrame(render);
+    console.log("rendered.");
+    if(RECORDING) {
+        gEncoder.add(ctx);
+        console.log("added frame " + frame);
+        if(frame < RECORDING_SECONDS) {
+            window.requestAnimationFrame(render);
+        } else {
+            var output = gEncoder.compile();
+            var url = (window.webkitURL || window.URL).createObjectURL(output);
+            window.open(url);
+        }
+    } else {
+        window.requestAnimationFrame(render);
+    }
 }
