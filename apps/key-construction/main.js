@@ -247,7 +247,7 @@ function render() {
     if(RECORDING) {
         gEncoder.add(ctx);
         console.log("added frame " + frame);
-        if(frame < RECORDING_SECONDS) {
+        if(frame < 60*RECORDING_SECONDS) {
             window.requestAnimationFrame(render);
         } else {
             var output = gEncoder.compile();
