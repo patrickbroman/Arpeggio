@@ -32,6 +32,8 @@ var CHORD_NAME_START_TIME = 1200;
 var CHORD_NAME_END_TIME = CHORD_NAME_START_TIME + 30;
 var CHORD_NAME_DELAY = DELAY_PER_CHORD;// + DELAY_PER_NOTE*3;
 
+var HIHGLIGHT_SIZE = 90;
+
 var HORIZONTAL_LINE_MARGIN = 120;
 
 var SEVENTHS_ENABLED = false;
@@ -161,9 +163,11 @@ function init() {
             gContainer.addObject(noteWidget);
 
             // highlight line widget
-            var highlightWidget = new TextWidget(pos.x, 50, KEY_NOTE_WIDTH, KEY_NOTE_WIDTH, "" + (j+1));
+            var xyAdd = (KEY_NOTE_WIDTH - HIHGLIGHT_SIZE)/2;
+            var highlightWidget = new TextWidget(pos.x + xyAdd, KEY_NOTE_Y + xyAdd, HIHGLIGHT_SIZE, HIHGLIGHT_SIZE, note);
             highlightWidget.backgroundColor = "red";
             highlightWidget.backgroundOpacity = 0.0;
+            highlightWidget.fontSize = KEY_NOTE_FONTSIZE;
             highlightWidget.fontOpacity = 0.0;
             gContainer.addObject(highlightWidget);
             chordNoteY += CHORD_NOTE_SPACING;
@@ -186,8 +190,6 @@ function init() {
                 }
             )
             , startTime+200, endTime+200);
-
-
         }
         // Widget for chord name
         var chordName = SEVENTHS_ENABLED ? key.chords[i].seventhName : key.chords[i].triadName;
