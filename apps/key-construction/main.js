@@ -53,6 +53,7 @@ function init() {
       keys.push(key);
     }
 
+    console.log("keyIndex: " + Config.keyIndex);
     var key = keys[Config.keyIndex];
 
     // Populate the container

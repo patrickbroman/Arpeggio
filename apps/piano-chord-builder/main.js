@@ -2,11 +2,14 @@ var RECORDING = Config.recording;
 var RECORDING_SECONDS = Config.recordingDuration;
 var RECORDING_CLICKS = true;
 
-var GUITAR_HEIGHT = 640;
-var GUITAR_WIDTH = 0.6180*GUITAR_HEIGHT;
+var PIANO_WIDTH = 1400;
+var PIANO_HEIGHT = 300;
 
 function init() {
     gCanvas = document.getElementById("myCanvas");
+
+    gCanvas.setAttribute('tabindex','0');
+    gCanvas.focus();
     var ctx = gCanvas.getContext("2d");
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, 1920, 1080);
@@ -16,36 +19,28 @@ function init() {
         gFrame = 0;
     }
 
-    // Initialize all keys
-
-    var keys = [];
-
-    for(var i = 0; i < gAllNotes.length; i++) {
-      var key = new Key(i);
-      keys.push(key);
-    }
-
-    var key = keys[Config.keyIndex];
-
     // Populate the container
 
     gContainer = new Container(3);
 
-    var guitarX = gCanvas.width / 2 - GUITAR_WIDTH / 2;
-    var guitarY = gCanvas.height / 2 - GUITAR_HEIGHT / 2;
+    var pianoX = gCanvas.width / 2 - PIANO_WIDTH / 2;
+    var pianoY = gCanvas.height / 2 - PIANO_HEIGHT / 2;
 
-    gGuitar = new GuitarNeckWidget(guitarX, guitarY, GUITAR_WIDTH, GUITAR_HEIGHT, 4);
+    gPiano = new PianoWidget(pianoX, pianoY, PIANO_WIDTH, PIANO_HEIGHT, 14);
 
-    gGuitar.setNoteStateForAll(NOTE_STATE_HIDDEN);
-    //guitar.setNoteStateForNotes(["G", "B", "D"], NOTE_STATE_HIGHLIGHTED);
+    gContainer.addObject(gPiano);
 
-    /*guitar.setNoteStateForStringAndFret(2, 0, NOTE_STATE_SELECTED);
-    guitar.setNoteStateForStringAndFret(3, 0, NOTE_STATE_SELECTED);
-    guitar.setNoteStateForStringAndFret(1, 2, NOTE_STATE_SELECTED);
-    guitar.setNoteStateForStringAndFret(0, 3, NOTE_STATE_SELECTED);
-    guitar.setNoteStateForStringAndFret(5, 3, NOTE_STATE_SELECTED); */
+    // set up keyboard handling
 
-    gContainer.addObject(gGuitar);
+    gCanvas.addEventListener("keydown", function(evt) {
+        console.log("PRESS");
+        if(evt.keyCode == 83) {
+            console.log("SAVE!");
+            var url = gCanvas.toDataURL("image/png");
+            window.open(url);
+
+        }
+    }, true);
 
     // set up mouse handling
 
@@ -65,8 +60,6 @@ function init() {
             }
         }
     }, false);
-
-
 
     window.requestAnimationFrame(renderRecordClicks);
     gStartTime = performance.now();

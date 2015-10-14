@@ -17,6 +17,16 @@ function init() {
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, 1920, 1080);
 
+    gCanvas.addEventListener("keydown", function(evt) {
+        console.log("PRESS");
+        if(evt.keyCode == 83) {
+            console.log("SAVE!");
+            var url = gCanvas.toDataURL("image/png");
+            window.open(url);
+
+        }
+    }, true);    
+
     // Initialize all keys
 
     var keys = [];
@@ -108,6 +118,8 @@ function init() {
         gContainer.addObject(noteWidget);
         chromaticNoteX += CHROMATIC_NOTE_WIDTH + CHROMATIC_NOTE_SPACING;
     }
+
+
 
     if(RECORDING) {
         gEncoder = new Whammy.Video(60);
