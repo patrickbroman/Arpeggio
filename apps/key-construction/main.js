@@ -1,4 +1,6 @@
 
+var SPEEDUP = 3.0;
+
 var RECORDING = Config.recording;
 var RECORDING_SECONDS = Config.recordingDuration;
 
@@ -40,6 +42,10 @@ var SEVENTHS_ENABLED = false;
 
 function init() {
     gCanvas = document.getElementById("myCanvas");
+
+    gCanvas.setAttribute('tabindex','0');
+    gCanvas.focus();
+
     var ctx = gCanvas.getContext("2d");
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, 1920, 1080);
@@ -53,12 +59,25 @@ function init() {
       keys.push(key);
     }
 
+    gCanvas.addEventListener("keydown", function(evt) {
+        console.log("PRESS");
+        if(evt.keyCode == 83) {
+            console.log("SAVE!");
+            var url = gCanvas.toDataURL("image/png");
+            window.open(url);
+
+        }
+    }, true);
+
+
     console.log("keyIndex: " + Config.keyIndex);
     var key = keys[Config.keyIndex];
 
     // Populate the container
 
     gContainer = new Container(3);
+
+
 
     var keyTotalWidth = KEY_NOTE_WIDTH * 7 + KEY_NOTE_SPACING * 6;
     var keyNoteX = gCanvas.width/2 - keyTotalWidth/2;
@@ -236,7 +255,7 @@ function init() {
 function render() {
     var ctx = gCanvas.getContext("2d");
     var time = performance.now() - gStartTime;
-    var frame = Math.floor(time*60.0/1000.0);
+    var frame = Math.floor(SPEEDUP*time*60.0/1000.0);
     if(RECORDING) {
         frame = gFrame;
         gFrame++;
