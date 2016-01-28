@@ -9,10 +9,14 @@ var CHROMATIC_NOTE_WIDTH = 120;
 var CHROMATIC_NOTE_SPACING = 20;
 var CHROMATIC_NOTE_FONTSIZE = 60;
 
-var KEY_NOTE_Y = 200;
+var KEY_NOTE_Y = 500;
 var KEY_NOTE_WIDTH = 146;
 var KEY_NOTE_SPACING = 108;
 var KEY_NOTE_FONTSIZE = 80;
+
+var CHORD_SEQ_FONTSIZE = 140;
+var CHORD_SEQ_NUMERAL_FONTSIZE = 100;
+var CHORD_SEQ_Y = 150;
 
 var DELAY_PER_NOTE = 80;
 var MOVING_NOTES_START_TIME = 340;
@@ -70,8 +74,9 @@ function init() {
     }, true);
 
 
-    console.log("keyIndex: " + Config.keyIndex);
-    var key = keys[Config.keyIndex];
+    console.log("keyIndex: " + Config.srcKeyIndex);
+    var srcKey = keys[Config.srcKeyIndex];
+    var destKey = keys[Config.destKeyIndex];
 
     // Populate the container
 
@@ -83,122 +88,157 @@ function init() {
 
     var keyNotePositions = [];
 
-    // first calculate the positions of the widgets representing scale
-    // notes
-
-    for(var i = 0; i < key.notes.length; i++) {
-        keyNotePositions.push({x: keyNoteX, y: keyNoteY});
-        keyNoteX += KEY_NOTE_WIDTH + KEY_NOTE_SPACING;
-    }
-
-    var chromaticTotalWidth = CHROMATIC_NOTE_WIDTH * 12 + CHROMATIC_NOTE_SPACING * 11;
-    var chromaticNoteX = gCanvas.width/2 - chromaticTotalWidth/2;
-    var chromaticNoteY = CHROMATIC_NOTE_Y;
-
-    var widgetDict = {};
-
-
     // Make widgets for all the chords
+    
+    var chordNumerals = ["I", "ii", "iii", "IV", "V", "vi", "vii"];
+    
+    var movingNumbers = [];
+    var movingChords = [];
+    
+    var srcChordFadeInStartTime = 2 * 60;
+    var numeralFadeInStartTime = 3 * 60;
+    var destChordFadeInStartTime = 22 * 60;
+    var chordFadeInTime = 1 * 60;
 
-
-    for(var i = 0; i < key.chords.length; i++) {
-        var chordNotes = key.chords[i].notes;
+    for(var i = 0; i < srcKey.chords.length; i++) {
+        var srcChordNotes = srcKey.chords[i].notes;
+        var destChordNotes = destKey.chords[i].notes;
         var notesPerChord = SEVENTHS_ENABLED ? 4 : 3;
 
-        var note = chordNotes[0];
-        var noteIndex = key.indexOfNote(note);
-        var pos = keyNotePositions[noteIndex];
-        var chordNoteX = pos.x;
-        var chordNoteY = pos.y;
-        for(var j = 0; j < notesPerChord; j++) {
-            var note = chordNotes[j];
-            var noteIndex = key.indexOfNote(note);
-            var pos = keyNotePositions[noteIndex];
-            console.log("note index:" + noteIndex);
-            var noteWidget = new TextWidget(pos.x, pos.y, KEY_NOTE_WIDTH, KEY_NOTE_WIDTH, note);
-            noteWidget.backgroundColor = "rgba(0, 0, 0, 0.0)";
-            noteWidget.fontOpacity = 0.0;
-            noteWidget.fontSize = KEY_NOTE_FONTSIZE;
-            var startTime = CHORD_ANIM_START + i * DELAY_PER_CHORD + j * DELAY_PER_NOTE;
-            var endTime = CHORD_ANIM_END + i * DELAY_PER_CHORD + j * DELAY_PER_NOTE;
-            // position animation
-            noteWidget.addAnimation(makeAnimation(
-                {
-                    "x" : makeInterpolator(pos.x, chordNoteX),
-                    "y" : makeInterpolator(pos.y, chordNoteY),
-                }
-            ), startTime, endTime);
+        var chordNoteX = keyNoteX;
+        keyNoteX += KEY_NOTE_WIDTH + KEY_NOTE_SPACING;
+        var chordNoteY = KEY_NOTE_Y;//pos.y;
+        var chord2NoteY = KEY_NOTE_Y + 100;//pos.y;
+        var chordNumeralY = KEY_NOTE_Y - 100;//pos.y;
 
-            noteWidget.addAnimation(makeAnimation(
-                {
-                    "fontOpacity" : makeInterpolator(0.0, 1.0),
-                }
-            )
-            , startTime, endTime);
-
-            gContainer.addObject(noteWidget);
-
-            // highlight line widget
-            var xyAdd = (KEY_NOTE_WIDTH - HIHGLIGHT_SIZE)/2;
-            var highlightWidget = new TextWidget(pos.x + xyAdd, KEY_NOTE_Y + xyAdd, HIHGLIGHT_SIZE, HIHGLIGHT_SIZE, note);
-            highlightWidget.backgroundColor = "red";
-            highlightWidget.backgroundOpacity = 0.0;
-            highlightWidget.fontSize = KEY_NOTE_FONTSIZE;
-            highlightWidget.fontOpacity = 0.0;
-            gContainer.addObject(highlightWidget);
-            chordNoteY += CHORD_NOTE_SPACING;
-
-            startTime = CHORD_ANIM_START + i * DELAY_PER_CHORD;
-            endTime = CHORD_ANIM_END + i * DELAY_PER_CHORD;
-
-            highlightWidget.addAnimation(makeAnimation(
-                {
-                    "backgroundOpacity" : makeInterpolator(0.0, 1.0),
-                    "fontOpacity" : makeInterpolator(0.0, 1.0)
-                }
-            )
-            , startTime, endTime);
-
-            highlightWidget.addAnimation(makeAnimation(
-                {
-                    "backgroundOpacity" : makeInterpolator(1.0, 0.0),
-                    "fontOpacity" : makeInterpolator(1.0, 0.0)
-                }
-            )
-            , startTime+200, endTime+200);
-        }
-        // Widget for chord name
-        var chordName = SEVENTHS_ENABLED ? key.chords[i].seventhName : key.chords[i].triadName;
+        // Widget for src key
+        var chordName = SEVENTHS_ENABLED ? srcKey.chords[i].seventhName : srcKey.chords[i].triadName;
         var noteWidget = new TextWidget(chordNoteX, chordNoteY + CHORD_NAME_SPACING, KEY_NOTE_WIDTH, KEY_NOTE_WIDTH, chordName);
-        noteWidget.textColor = "red";
         noteWidget.backgroundColor = "rgba(0, 0, 0, 0.0)";
         noteWidget.fontOpacity = 0.0;
         noteWidget.fontSize = CHORD_NAME_FONTSIZE;
-        gContainer.addObject(noteWidget);
-
         noteWidget.addAnimation(makeAnimation(
             {
-                "fontOpacity" : makeInterpolator(0.0, 1.0),
+                "fontOpacity" : makeInterpolator(0, 1)
             }
         )
-        , CHORD_NAME_START_TIME + i*CHORD_NAME_DELAY, CHORD_NAME_END_TIME + i*CHORD_NAME_DELAY);
+        , srcChordFadeInStartTime, srcChordFadeInStartTime + chordFadeInTime);
+        gContainer.addObject(noteWidget);
+        
+        // Widget for dest key
+        chordName = SEVENTHS_ENABLED ? destKey.chords[i].seventhName : destKey.chords[i].triadName;
+        noteWidget = new TextWidget(chordNoteX, chord2NoteY + CHORD_NAME_SPACING, KEY_NOTE_WIDTH, KEY_NOTE_WIDTH, chordName);
+        noteWidget.backgroundColor = "rgba(0, 0, 0, 0.0)";
+        noteWidget.fontOpacity = 0.0;
+        noteWidget.fontSize = CHORD_NAME_FONTSIZE;
+        noteWidget.addAnimation(makeAnimation(
+            {
+                "fontOpacity" : makeInterpolator(0, 1)
+            }
+        )
+        , destChordFadeInStartTime, destChordFadeInStartTime + chordFadeInTime);
+        gContainer.addObject(noteWidget);
+        movingChords.push(noteWidget);
+        
+        // Widget for chord numeral
+        chordName = chordNumerals[i];
+        noteWidget = new TextWidget(chordNoteX, chordNumeralY + CHORD_NAME_SPACING, KEY_NOTE_WIDTH, KEY_NOTE_WIDTH, chordName);
+        noteWidget.g = 0;
+        noteWidget.b = 0;
+        noteWidget.backgroundColor = "rgba(0, 0, 0, 0.0)";
+        noteWidget.fontOpacity = 0.0;
+        noteWidget.fontSize = CHORD_NAME_FONTSIZE;
+        noteWidget.addAnimation(makeAnimation(
+            {
+                "fontOpacity" : makeInterpolator(0, 1)
+            }
+        )
+        , numeralFadeInStartTime, numeralFadeInStartTime + chordFadeInTime);
+        gContainer.addObject(noteWidget);       
+        movingNumbers.push(noteWidget);
+
+    }
+    
+    var chordSeq = Config.chordSequence;
+    var chordTotalWidth = KEY_NOTE_WIDTH * 4 + KEY_NOTE_SPACING * 3;
+    var chordSeqX = gCanvas.width/2 - chordTotalWidth/2;
+    var chordSeqY = CHORD_SEQ_Y;
+    var chordNumeralSeqY = CHORD_SEQ_Y -100;
+    
+    
+    /*noteWidget.addAnimation(makeAnimation(
+                {
+                    "x" : makeInterpolator(chromaticNoteX, pos.x),
+                    "y" : makeInterpolator(chromaticNoteY, pos.y),
+                    "fontSize" : makeInterpolator(CHROMATIC_NOTE_FONTSIZE, KEY_NOTE_FONTSIZE),
+                    "width" : makeInterpolator(CHROMATIC_NOTE_WIDTH, KEY_NOTE_WIDTH),
+                    "height" : makeInterpolator(CHROMATIC_NOTE_WIDTH, KEY_NOTE_WIDTH)
+                }
+            )
+            , st, et);*/
+    
+    var startFadeOutSrc = 26*60;
+    var fadeOutTime = 1 * 60;
+    var chordTransportTime = 2 * 60;
+    var startMoveNumerals = 6 * 60; 
+    
+    for(var i = 0; i < chordSeq.length; i++) {
+        // Widget for src key
+        var currentChordSeqX = chordSeqX;
+        chordSeqX += KEY_NOTE_WIDTH + KEY_NOTE_SPACING;
+        
+        var chordName = SEVENTHS_ENABLED ? srcKey.chords[chordSeq[i]].seventhName : srcKey.chords[chordSeq[i]].triadName;
+        var noteWidget = new TextWidget(currentChordSeqX, chordSeqY + CHORD_NAME_SPACING, KEY_NOTE_WIDTH, KEY_NOTE_WIDTH, chordName);
+        noteWidget.backgroundColor = "rgba(0, 0, 0, 0.0)";
+        noteWidget.fontOpacity = 1.0;
+        noteWidget.fontSize = CHORD_SEQ_FONTSIZE;
+        noteWidget.addAnimation(makeAnimation(
+            {
+                "fontOpacity" : makeInterpolator(1, 0)
+            }
+        )
+        , startFadeOutSrc, startFadeOutSrc + fadeOutTime);
+        gContainer.addObject(noteWidget);
+        
+        
+        chordName = SEVENTHS_ENABLED ? destKey.chords[chordSeq[i]].seventhName : destKey.chords[chordSeq[i]].triadName;
+        var originalChord = movingChords[chordSeq[i]];
+        noteWidget = new TextWidget(originalChord.x, originalChord.y, KEY_NOTE_WIDTH, KEY_NOTE_WIDTH, chordName);
+        noteWidget.backgroundColor = "rgba(0, 0, 0, 0.0)";
+        noteWidget.fontOpacity = 0.0;
+        noteWidget.fontSize = CHORD_NAME_FONTSIZE;
+        noteWidget.addAnimation(makeAnimation(
+            {
+                "x" : makeInterpolator(originalChord.x, currentChordSeqX),
+                "y" : makeInterpolator(originalChord.y, chordSeqY + CHORD_NAME_SPACING),
+                "fontSize" : makeInterpolator(CHORD_NAME_FONTSIZE, CHORD_SEQ_FONTSIZE),
+                "fontOpacity" : makeInterpolator(0, 1)
+            }
+        )
+        , startFadeOutSrc + i * chordTransportTime * 2, (startFadeOutSrc + i * chordTransportTime * 2) + chordTransportTime);
+        gContainer.addObject(noteWidget);
+        
+        chordName = chordNumerals[chordSeq[i]];
+        originalChord = movingNumbers[chordSeq[i]];
+        noteWidget = new TextWidget(originalChord.x, originalChord.y, KEY_NOTE_WIDTH, KEY_NOTE_WIDTH, chordName);
+        noteWidget.backgroundColor = "rgba(0, 0, 0, 0.0)";
+        noteWidget.fontOpacity = 0.0;
+        noteWidget.g = 0;
+        noteWidget.b = 0;
+        noteWidget.fontSize = CHORD_SEQ_NUMERAL_FONTSIZE;
+        noteWidget.addAnimation(makeAnimation(
+            {
+                "x" : makeInterpolator(originalChord.x, currentChordSeqX),
+                "y" : makeInterpolator(originalChord.y, chordNumeralSeqY),
+                "fontSize" : makeInterpolator(CHORD_NAME_FONTSIZE, CHORD_SEQ_NUMERAL_FONTSIZE),
+                "fontOpacity": makeInterpolator(1, 1)
+            }
+        )
+        , startMoveNumerals + i * chordTransportTime * 2, (startMoveNumerals + i * chordTransportTime * 2) +chordTransportTime);
+        
+        gContainer.addObject(noteWidget);   
     }
 
-    // widget for horizontal line
-/*    var lineWidget = new TextWidget(HORIZONTAL_LINE_MARGIN, 524, gCanvas.width-2*HORIZONTAL_LINE_MARGIN, 16, "");
-    lineWidget.textColor = "red";
-    lineWidget.backgroundColor = "red";
-    lineWidget.backgroundOpacity = 0.0;
-    lineWidget.fontOpacity = 1.0;
-    gContainer.addObject(lineWidget);
-
-    lineWidget.addAnimation(makeAnimation(
-        {
-            "backgroundOpacity" : makeInterpolator(0.0, 1.0),
-        }
-    )
-    , CHORD_NAME_START_TIME, CHORD_NAME_END_TIME);
-*/
     if(RECORDING) {
         gEncoder = new Whammy.Video(60);
         gFrame = 0;
