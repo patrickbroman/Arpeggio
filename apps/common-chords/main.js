@@ -11,7 +11,7 @@ var RECORDING_SECONDS = Config.recordingDuration;
 
 // Layout constants, chord table
 
-var CHORD_TABLE_X_START = 600;
+var CHORD_TABLE_X_START = 610;
 var CHORD_TABLE_WIDTH = 620;
 var CHORD_WIDGET_WIDTH = 70;
 var CHORD_TABLE_Y_START = 50;
@@ -112,7 +112,9 @@ function init() {
     // for each key
     
     var highlightChordIndices = [0, 3, 4, 5];
-    var highlightKeyIndices = [0, 2, 4, 7, 9];
+    //var highlightKeyIndices = [0, 2, 4, 7, 9];
+    var highlightKeyIndices = [1, 3, 5, 6, 8, 10, 11];
+    
     
     for(var i = 0; i < 12; i++) {
         // for each chord
@@ -145,20 +147,20 @@ function init() {
                     3*60 + hlIndex * 30, 
                     4*60 + hlIndex * 30
                 );
-                if(hlkIndex == -1) {
+                if(hlkIndex != -1) {
                     noteWidget.addAnimation(
                         makeAnimation({
                             "backgroundOpacity" : makeInterpolator(0.2, 0.1) 
                         }), 
-                        6*60 + hlkIndex * 60, 
-                        7*60 + hlkIndex * 60
+                        6*60 + hlkIndex * 10, 
+                        7*60 + hlkIndex * 10
                     );
                     noteWidget.addAnimation(
                         makeAnimation({
-                            "fontOpacity" : makeInterpolator(1.0, 0.5)
+                            "fontOpacity" : makeInterpolator(1.0, 0.4)
                         }), 
-                        6*60 + hlkIndex * 60, 
-                        7*60 + hlkIndex * 60
+                        6*60 + hlkIndex * 10, 
+                        7*60 + hlkIndex * 10
                     );                                    
                 }                
             } else {
