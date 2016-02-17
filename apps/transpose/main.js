@@ -99,6 +99,8 @@ function init() {
     var numeralFadeInStartTime = 3 * 60;
     var destChordFadeInStartTime = 22 * 60;
     var chordFadeInTime = 1 * 60;
+    
+    var chordSeq = Config.chordSequence;
 
     for(var i = 0; i < srcKey.chords.length; i++) {
         var srcChordNotes = srcKey.chords[i].notes;
@@ -117,9 +119,10 @@ function init() {
         noteWidget.backgroundColor = "rgba(0, 0, 0, 0.0)";
         noteWidget.fontOpacity = 0.0;
         noteWidget.fontSize = CHORD_NAME_FONTSIZE;
+        var endOpacity = chordSeq.indexOf(i) != -1 ? 1.0 : 0.5;
         noteWidget.addAnimation(makeAnimation(
             {
-                "fontOpacity" : makeInterpolator(0, 1)
+                "fontOpacity" : makeInterpolator(0, endOpacity)
             }
         )
         , srcChordFadeInStartTime, srcChordFadeInStartTime + chordFadeInTime);
@@ -133,7 +136,7 @@ function init() {
         noteWidget.fontSize = CHORD_NAME_FONTSIZE;
         noteWidget.addAnimation(makeAnimation(
             {
-                "fontOpacity" : makeInterpolator(0, 1)
+                "fontOpacity" : makeInterpolator(0, endOpacity )
             }
         )
         , destChordFadeInStartTime, destChordFadeInStartTime + chordFadeInTime);
@@ -159,7 +162,7 @@ function init() {
 
     }
     
-    var chordSeq = Config.chordSequence;
+    
     var chordTotalWidth = KEY_NOTE_WIDTH * 4 + KEY_NOTE_SPACING * 3;
     var chordSeqX = gCanvas.width/2 - chordTotalWidth/2;
     var chordSeqY = CHORD_SEQ_Y;
