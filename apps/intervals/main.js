@@ -22,57 +22,36 @@ var FADE_DURATION = 60.0;
 
 var NOTE_FADE = 3;
 
-
-var noteFrequencies = [
-    130.81,
-    138.59,
-    146.83,
-    155.56,
-    164.81,
-    174.61,
-    185,
-    196,
-    207.65,
-    220,
-    233.08,
-    246.94,
-    261.63,
-    277.18,
-    293.66,
-    311.13,
-    329.63,
-    349.23,
-    369.99,
-    392.00,
-    415.30,
-    440.00,
-    466.16,
-    493.88
-];
-
-depressed_keys = {};
-oscOn = false;
-
 var isEmpty = function(obj) {
     return Object.keys(obj).length === 0;
 }
 
-function noteOn(index) {
-    if(!oscOn) {
-        vco.start(0);
-        context.resume();
 
-        oscOn = true;
-    }
+var IDS_NONE = 0;
+var IDS_OPENED = 1;
+var IDS_CLOSED = 2;
+
+var intervalDisplayState = IDS_NONE;
+
+function noteOn(index) {
     console.log("NOTE ON!");
     if(index < 0 || index > 23) {
         return;
     }
     var note = gNoteWidgets[index];
-    note.backgroundOpacity = 1.0;
-    vco.frequency.value = noteFrequencies[index];
-    vca.gain.value = 1;
+    note.backgroundOpacity = 0.8;
     depressed_keys[index] = true;
+
+    switch(intervalDisplayState) {
+        case 0:
+            intervalDisplayState = 1;
+            break;
+        case 1:
+            intervalDisplayState = 2;
+            break;
+        case 2:
+            break;
+    }
 
 }
 
@@ -84,7 +63,7 @@ function noteOff(index) {
     var frame = getCurrentFrame();
     note.addAnimation(makeAnimation(
         {
-            "backgroundOpacity" : makeInterpolator(1.0, 0.4),
+            "backgroundOpacity" : makeInterpolator(0.8, 0.38),
         }
     )
     , frame, frame + NOTE_FADE);
@@ -191,8 +170,6 @@ function init() {
     gContainer = new Container(3);
     gNotes = [];
 
-    var xPos = NOTE_XSTART;
-    var xPosDot = DOT_XSTART;
 
     var majorHasNote = [true, false, true, false, true, true, false, true, false, true, false, true];
     var minorHasNote = [true, false, true, true, false, true, false, true, true, false, true, false];
@@ -203,13 +180,98 @@ function init() {
 
     gNoteWidgets = [];
 
-    for(var i = 0; i < 24; i++) {
-        var noteWidget = new TextWidget(xPos, YPOS, NOTE_WIDTH, NOTE_HEIGHT, "" + ((i%12)+1));
+
+    var intervals = [
+        {
+            quality: "perfect",
+            number: "unison"
+        },
+        {
+            quality: "minor",
+            number: "second"
+        },
+        {
+            quality: "major",
+            number: "second"
+        },
+        {
+            quality: "minor",
+            number: "third"
+        },
+        {
+            quality: "major",
+            number: "third"
+        },
+        {
+            quality: "perfect",
+            number: "fourth"
+        },
+        {
+            quality: "",
+            number: "tritone"
+        },
+        {
+            quality: "perfect",
+            number: "fifth"
+        },
+        {
+            quality: "minor",
+            number: "sixth"
+        },
+        {
+            quality: "major",
+            number: "sixth"
+        },
+        {
+            quality: "minor",
+            number: "seventh"
+        },
+        {
+            quality: "major",
+            number: "seventh"
+        },
+        {
+            quality: "perfect octave",
+            number: "seventh"
+        }                
+    ];
+
+    var noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+    var xPos = NOTE_XSTART;
+    var xPosDot = DOT_XSTART;
+    
+
+    for(var i = 0; i < 13; i++) {
+        var topName = intervals[i%12].quality;
+        var bottomName = intervals[i%12].number;
+
+        if(i == 12) {
+            bottomName = "octave";
+        }
+
+        var intervalWidget1 = new TextWidget(xPos, YPOS, NOTE_WIDTH, 0, topName);
+        intervalWidget1.backgroundColor = "rgba(0, 0, 0, 0.0)";
+        intervalWidget1.fontSize = 16;
+        intervalWidget1.textY = -40;
+
+        var intervalWidget2 = new TextWidget(xPos, YPOS, NOTE_WIDTH, 0, bottomName);
+        intervalWidget2.backgroundColor = "rgba(0, 0, 0, 0.0)";
+        intervalWidget2.fontSize = 16;
+        intervalWidget2.textY = -20;
+
+        var noteWidget = new TextWidget(xPos, YPOS, NOTE_WIDTH, NOTE_HEIGHT, noteNames[i%12]);
         noteWidget.backgroundColor = "rgba(100, 100, 100, 1.0)";
         noteWidget.backgroundOpacity = 0.4;
-        noteWidget.textY = 50;
+        noteWidget.fontSize = 30;
+        noteWidget.textY = 280;        
+
+        gContainer.addObject(intervalWidget1);
+        gContainer.addObject(intervalWidget2);
         gContainer.addObject(noteWidget);
         gNoteWidgets.push(noteWidget);
+        //gNoteWidgets.push(noteWidget2);
+
 
         if(majorHasNote[i%12] || majorBlue[i%12]) {
             var majWidget = new TextWidget(xPosDot, YPOS + 100, DOT_WIDTH, DOT_WIDTH, "" );
@@ -241,7 +303,7 @@ function init() {
             }            
             gContainer.addObject(minWidget);
             gNotes.push(minWidget);
-        }
+        } 
 
         xPos += NOTE_WIDTH + NOTE_MARGIN;
         xPosDot += DOT_WIDTH + DOT_MARGIN;
@@ -252,6 +314,10 @@ function init() {
     window.addEventListener("keydown", function(evt) {
         var code = evt.keyCode;
         console.log(code);
+
+        if(code == 73) {
+            intervalDisplayState = 0;
+        }
 
         if(code == 219) {
             //context.resume();
