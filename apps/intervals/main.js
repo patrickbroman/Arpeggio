@@ -15,12 +15,72 @@ var DOT_MARGIN = 30;
 var NOTE_XSTART = 1920/2 - ((24 * NOTE_WIDTH + 23 * NOTE_MARGIN) / 2);
 var DOT_XSTART = 1920/2 - ((24 * DOT_WIDTH + 23 * DOT_MARGIN) / 2);
 
-//var LINE_HEIGHT = 80;
-var YPOS = 240; // 1080/2 - QUARTERNOTE_HEIGHT/2;
+var YPOS = 180;
+var BRACKET_POS = YPOS - 40;
+var BRACKET_HIDDEN_POS = 800;
+
+
+var CTL_RANDOM = 0;
+var CTL_RELATIVE = 1;
 
 var FADE_DURATION = 60.0;
 
 var NOTE_FADE = 3;
+
+intervals = [
+    {
+        quality: "perfect",
+        number: "unison"
+    },
+    {
+        quality: "minor",
+        number: "second"
+    },
+    {
+        quality: "major",
+        number: "second"
+    },
+    {
+        quality: "minor",
+        number: "third"
+    },
+    {
+        quality: "major",
+        number: "third"
+    },
+    {
+        quality: "perfect",
+        number: "fourth"
+    },
+    {
+        quality: "",
+        number: "tritone"
+    },
+    {
+        quality: "perfect",
+        number: "fifth"
+    },
+    {
+        quality: "minor",
+        number: "sixth"
+    },
+    {
+        quality: "major",
+        number: "sixth"
+    },
+    {
+        quality: "minor",
+        number: "seventh"
+    },
+    {
+        quality: "major",
+        number: "seventh"
+    },
+    {
+        quality: "perfect octave",
+        number: ""
+    }                
+];
 
 var isEmpty = function(obj) {
     return Object.keys(obj).length === 0;
@@ -31,7 +91,99 @@ var IDS_NONE = 0;
 var IDS_OPENED = 1;
 var IDS_CLOSED = 2;
 
+var RDS_NONE = 0;
+var RDS_REFERENCE_CHOSEN = 1;
+
+var firstIntervalNote = null;
+var firstIntervalIndex = -1;
+
 var intervalDisplayState = IDS_NONE;
+
+class RelativeIntervalController {
+    constructor(bracketWidget) {
+        this.bracketWidget = bracketWidget;
+        this.firstIntervalNote = null;
+        this.firstIntervalIndex = -1;
+        this.intervalDisplayState = RDS_NONE;
+    }
+    noteOn(note, index) {
+        switch(this.intervalDisplayState) {
+            case RDS_NONE:
+                console.log("case RDS_NONE");
+                this.intervalDisplayState = RDS_REFERENCE_CHOSEN;
+                this.firstIntervalNote = note;
+                this.firstIntervalIndex = index;
+                break;
+            case RDS_REFERENCE_CHOSEN:
+                console.log("case RDS_REFERENCE_CHOSEN");
+                //this.intervalDisplayState = IDS_CLOSED;
+                var intv = intervals[index - this.firstIntervalIndex];
+                this.bracketWidget.text = intv.quality + " " + intv.number;
+                this.bracketWidget.x = this.firstIntervalNote.x + NOTE_WIDTH / 2;
+                this.bracketWidget.width = note.x - this.firstIntervalNote.x;
+                this.bracketWidget.y = BRACKET_POS;
+
+                //this.firstIntervalNote = null;
+                //this.firstIntervalIndex = -1;
+                break;
+        }
+    }
+
+    resetIntervalState(note, index) {
+        this.firstIntervalNote = note;
+        this.firstIntervalIndex = index;
+        this.intervalDisplayState = IDS_OPENED;
+    //bracketWidget.y = BRACKET_HIDDEN_POS;   
+    }
+}
+
+
+class RandomIntervalController {
+    constructor(bracketWidget) {
+        this.bracketWidget = bracketWidget;
+        this.firstIntervalNote = null;
+        this.firstIntervalIndex = -1;
+        this.intervalDisplayState = IDS_NONE;
+    }
+    noteOn(note, index) {
+
+        console.log("IC note on");
+
+        switch(this.intervalDisplayState) {
+            case IDS_NONE:
+                console.log("case IDS_NONE");
+                this.intervalDisplayState = IDS_OPENED;
+                this.firstIntervalNote = note;
+                this.firstIntervalIndex = index;
+                break;
+            case IDS_OPENED:
+                console.log("case IDS_OPENED");
+                this.intervalDisplayState = IDS_CLOSED;
+                var intv = intervals[index - this.firstIntervalIndex];
+                this.bracketWidget.text = intv.quality + " " + intv.number;
+                this.bracketWidget.x = this.firstIntervalNote.x + NOTE_WIDTH / 2;
+                this.bracketWidget.width = note.x - this.firstIntervalNote.x;
+                this.bracketWidget.y = BRACKET_POS;
+
+                this.firstIntervalNote = null;
+                this.firstIntervalIndex = -1;
+                break;
+            case IDS_CLOSED:
+                console.log("case IDS_CLOSED");
+                this.resetIntervalState(note, index);
+                break; 
+        }
+    }
+
+    resetIntervalState(note, index) {
+        this.firstIntervalNote = note;
+        this.firstIntervalIndex = index;
+        this.intervalDisplayState = IDS_OPENED;
+    //bracketWidget.y = BRACKET_HIDDEN_POS;   
+    }
+}
+
+
 
 function noteOn(index) {
     console.log("NOTE ON!");
@@ -40,19 +192,10 @@ function noteOn(index) {
     }
     var note = gNoteWidgets[index];
     note.backgroundOpacity = 0.8;
-    depressed_keys[index] = true;
 
-    switch(intervalDisplayState) {
-        case 0:
-            intervalDisplayState = 1;
-            break;
-        case 1:
-            intervalDisplayState = 2;
-            break;
-        case 2:
-            break;
+    if(!controllerBypass) {
+        intervalController.noteOn(note, index);
     }
-
 }
 
 function noteOff(index) {
@@ -67,12 +210,6 @@ function noteOff(index) {
         }
     )
     , frame, frame + NOTE_FADE);
-
-    delete depressed_keys[index];
-    if (isEmpty(depressed_keys)) {
-        vco.frequency.value = 0;
-        vca.gain.value = 0;
-    }
 }
 
 function getCurrentFrame() {
@@ -80,76 +217,6 @@ function getCurrentFrame() {
     var frame = Math.floor(time*60.0/1000.0);
     return frame;    
 }
-
-function killMajorNonPenta() { 
-    for(var i = 0; i < gNotes.length; i++) {
-        var note = gNotes[i];
-        if(note.isMajor && !note.isPenta && !note.isBlue) {
-            var frame = getCurrentFrame();
-            note.addAnimation(makeAnimation(
-                {
-                    "backgroundOpacity" : makeInterpolator(1.0, 0.0),
-                }
-            )
-            , frame, frame + FADE_DURATION);
-            console.log("killing note # " + i);
-        }
-    }
-}
-
-function killMinorNonPenta() { 
-    console.log("trying to kill minor non-penta");
-    for(var i = 0; i < gNotes.length; i++) {
-        var note = gNotes[i];
-        if(!note.isMajor && !note.isPenta && !note.isBlue) {
-            var frame = getCurrentFrame();
-            note.addAnimation(makeAnimation(
-                {
-                    "backgroundOpacity" : makeInterpolator(1.0, 0.0),
-                }
-            )
-            , frame, frame + FADE_DURATION);
-            console.log("killing note # " + i);
-        }
-    }
-}
-
-function activateMajorBlue() {
-    console.log("activate major blue");
-    for(var i = 0; i < gNotes.length; i++) {
-        var note = gNotes[i];
-        if(note.isBlueMajor) {
-            console.log("Found blue note 2!");
-            var frame = getCurrentFrame();
-            note.addAnimation(makeAnimation(
-                {
-                    "backgroundOpacity" : makeInterpolator(0.0, 1.0),
-                }
-            )
-            , frame, frame + FADE_DURATION);
-            console.log("enabling blue note # " + i);
-        }
-    }
-}
-
-function activateMinorBlue() {
-    console.log("activate minor blue");
-    for(var i = 0; i < gNotes.length; i++) {
-        var note = gNotes[i];
-        if(note.isBlueMinor) {
-            console.log("Found blue note 2!");
-            var frame = getCurrentFrame();
-            note.addAnimation(makeAnimation(
-                {
-                    "backgroundOpacity" : makeInterpolator(0.0, 1.0),
-                }
-            )
-            , frame, frame + FADE_DURATION);
-            console.log("enabling blue note # " + i);
-        }
-    }
-}
-
 
 function init() {
     gCanvas = document.getElementById("myCanvas");
@@ -170,77 +237,25 @@ function init() {
     gContainer = new Container(3);
     gNotes = [];
 
-
     var majorHasNote = [true, false, true, false, true, true, false, true, false, true, false, true];
     var minorHasNote = [true, false, true, true, false, true, false, true, true, false, true, false];
-    var majorBlue = [false, false, false, true, false, false, false, false, false, false, false, false];
-    var minorBlue = [false, false, false, false, false, false, true, false, false, false, false, false];
-    var majorPenta = [true, false, true, false, true, false, false, true, false, true, false, false];
-    var minorPenta = [true, false, false, true, false, true, false, true, false, false, true, false];
 
     gNoteWidgets = [];
-
-
-    var intervals = [
-        {
-            quality: "perfect",
-            number: "unison"
-        },
-        {
-            quality: "minor",
-            number: "second"
-        },
-        {
-            quality: "major",
-            number: "second"
-        },
-        {
-            quality: "minor",
-            number: "third"
-        },
-        {
-            quality: "major",
-            number: "third"
-        },
-        {
-            quality: "perfect",
-            number: "fourth"
-        },
-        {
-            quality: "",
-            number: "tritone"
-        },
-        {
-            quality: "perfect",
-            number: "fifth"
-        },
-        {
-            quality: "minor",
-            number: "sixth"
-        },
-        {
-            quality: "major",
-            number: "sixth"
-        },
-        {
-            quality: "minor",
-            number: "seventh"
-        },
-        {
-            quality: "major",
-            number: "seventh"
-        },
-        {
-            quality: "perfect octave",
-            number: "seventh"
-        }                
-    ];
 
     var noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
     var xPos = NOTE_XSTART;
     var xPosDot = DOT_XSTART;
-    
+
+    // initialize bracket widgets
+
+    bracketWidget = new BracketWidget(40, BRACKET_HIDDEN_POS, 850, 0, "boop");
+
+    gContainer.addObject(bracketWidget);
+
+    controllerMode = CTL_RANDOM;
+    controllerBypass = false;
+    intervalController = new RandomIntervalController(bracketWidget);
 
     for(var i = 0; i < 13; i++) {
         var topName = intervals[i%12].quality;
@@ -250,57 +265,29 @@ function init() {
             bottomName = "octave";
         }
 
-        var intervalWidget1 = new TextWidget(xPos, YPOS, NOTE_WIDTH, 0, topName);
-        intervalWidget1.backgroundColor = "rgba(0, 0, 0, 0.0)";
-        intervalWidget1.fontSize = 16;
-        intervalWidget1.textY = -40;
-
-        var intervalWidget2 = new TextWidget(xPos, YPOS, NOTE_WIDTH, 0, bottomName);
-        intervalWidget2.backgroundColor = "rgba(0, 0, 0, 0.0)";
-        intervalWidget2.fontSize = 16;
-        intervalWidget2.textY = -20;
-
         var noteWidget = new TextWidget(xPos, YPOS, NOTE_WIDTH, NOTE_HEIGHT, noteNames[i%12]);
         noteWidget.backgroundColor = "rgba(100, 100, 100, 1.0)";
         noteWidget.backgroundOpacity = 0.4;
         noteWidget.fontSize = 30;
         noteWidget.textY = 280;        
 
-        gContainer.addObject(intervalWidget1);
-        gContainer.addObject(intervalWidget2);
         gContainer.addObject(noteWidget);
         gNoteWidgets.push(noteWidget);
-        //gNoteWidgets.push(noteWidget2);
 
-
-        if(majorHasNote[i%12] || majorBlue[i%12]) {
+        if(majorHasNote[i%12]) {
             var majWidget = new TextWidget(xPosDot, YPOS + 100, DOT_WIDTH, DOT_WIDTH, "" );
             majWidget.backgroundColor = "rgba(0, 255, 80, 1.0)";
             majWidget.backgroundMode = TEXTWIDGET_BACKGROUNDMODE_CIRCLE;
             majWidget.isMajor = true;
-            majWidget.isPenta = majorPenta[i%12];
-            majWidget.isBlue = majorBlue[i%12];
-            majWidget.isBlueMajor = majWidget.isBlue;
-            if(majWidget.isBlue) {
-                majWidget.backgroundColor = "rgba(60, 160, 255, 1.0)";
-                majWidget.backgroundOpacity = 0;
-            }
             gContainer.addObject(majWidget);
             gNotes.push(majWidget);
         }
 
-        if(minorHasNote[i%12] || minorBlue[i%12]) {
+        if(minorHasNote[i%12]) {
             var minWidget = new TextWidget(xPosDot, YPOS + 160, DOT_WIDTH, DOT_WIDTH, "");
             minWidget.backgroundColor = "rgba(210, 0, 120, 1.0)";
             minWidget.backgroundMode = TEXTWIDGET_BACKGROUNDMODE_CIRCLE;
             minWidget.isMajor = false;
-            minWidget.isPenta = minorPenta[i%12];
-            minWidget.isBlue = minorBlue[i%12];
-            minWidget.isBlueMinor = minWidget.isBlue;
-            if(minWidget.isBlue) {
-                minWidget.backgroundColor = "rgba(60, 160, 255, 1.0)";
-                minWidget.backgroundOpacity = 0;
-            }            
             gContainer.addObject(minWidget);
             gNotes.push(minWidget);
         } 
@@ -309,48 +296,33 @@ function init() {
         xPosDot += DOT_WIDTH + DOT_MARGIN;
     }
 
-    gNoteKeyCodes = [192, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 187];
-
     window.addEventListener("keydown", function(evt) {
         var code = evt.keyCode;
         console.log(code);
 
+        if(code == 66) {
+            controllerBypass = !controllerBypass;
+        }
+
         if(code == 73) {
-            intervalDisplayState = 0;
-        }
-
-        if(code == 219) {
-            //context.resume();
-            //vco.frequency.value = 440;
-            //vca.gain.value = 0;
-            vca.gain.value = 0;
-        }
-
-
-        if(code == 65) {
-            killMajorNonPenta();
-        } else if(code == 90) {
-            killMinorNonPenta();
-        } else if(code == 83) {
-            activateMajorBlue();
-        } else if(code == 88) {
-            activateMinorBlue();
-        }
-
-        var idx = gNoteKeyCodes.indexOf(code);
-        if(idx != -1) {
-            noteOn(idx);
+            //intervalDisplayState = 0;
+            //resetIntervalState();
+            console.log("SHOULD FLIP!!!");
+            if(controllerMode == CTL_RANDOM) {
+                console.log("FLIP TO RELATIVE");
+                controllerMode = CTL_RELATIVE;
+                intervalController = new RelativeIntervalController(bracketWidget);
+            } else {
+                console.log("FLIP TO RANDOM");
+                controllerMode = CTL_RANDOM;
+                intervalController = new RandomIntervalController(bracketWidget);
+            }
         }
     }, false);
 
     window.addEventListener("keyup", function(evt) {
         var code = evt.keyCode;
         console.log(code);
-
-        var idx = gNoteKeyCodes.indexOf(code);
-        if(idx != -1) {
-            noteOff(idx);
-        }
     }, false);
 
     if(RECORDING) {
@@ -365,22 +337,6 @@ function init() {
         gFrame = 0;
         gCaptureStarted = false;
     }
-
-    // setup synth
-
-    context = new AudioContext;
-    vco = context.createOscillator();
-    vco.type = 'sawtooth';
-    vco.frequency.value = 200;
-
-    vco.connect(context.destination);
-    //vco.start(0);
-
-    vca = context.createGain();
-    vca.gain.value = 0;
-
-    vco.connect(vca);
-    vca.connect(context.destination);
 
     // setup midi
 
@@ -455,6 +411,20 @@ function render() {
         ctx.fillStyle = "yellow";
         ctx.font = "30px Futura";
         ctx.fillText("Time: " + parseFloat(Math.round((time/1000.0) * 100) / 100).toFixed(2), 10, 1060);
+
+        ctx.fillStyle = "red";
+        ctx.font = "30px Futura";
+        var text = "foo";
+        var text = "";
+        if(controllerMode == CTL_RANDOM) {
+            text = "random";
+        } else {
+            text = "relative";
+        }
+        ctx.fillText(text, 10, 30);
+        ctx.fillStyle = "yellow";
+        ctx.fillText("controllerBypass: " + controllerBypass, 10, 60);
+
         window.requestAnimationFrame(render);
     }
 }
