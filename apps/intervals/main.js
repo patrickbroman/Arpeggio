@@ -15,17 +15,23 @@ var DOT_MARGIN = 30;
 var NOTE_XSTART = 1920/2 - ((24 * NOTE_WIDTH + 23 * NOTE_MARGIN) / 2);
 var DOT_XSTART = 1920/2 - ((24 * DOT_WIDTH + 23 * DOT_MARGIN) / 2);
 
-var YPOS = 180;
+var TABLE_YPOS = 200;
+var TABLE_ROW_HEIGHT = 60;
+
+var YPOS = 380;
 var BRACKET_POS = YPOS - 40;
 var BRACKET_HIDDEN_POS = 800;
 
 
 var CTL_RANDOM = 0;
 var CTL_RELATIVE = 1;
+var CTL_CHORD = 2;
 
 var FADE_DURATION = 60.0;
 
-var NOTE_FADE = 3;
+var NOTE_FADE = 5;
+
+var DOT_FADE = 80;
 
 intervals = [
     {
@@ -86,7 +92,6 @@ var isEmpty = function(obj) {
     return Object.keys(obj).length === 0;
 }
 
-
 var IDS_NONE = 0;
 var IDS_OPENED = 1;
 var IDS_CLOSED = 2;
@@ -98,6 +103,14 @@ var firstIntervalNote = null;
 var firstIntervalIndex = -1;
 
 var intervalDisplayState = IDS_NONE;
+
+class ChordIntervalController {
+    constructor(bw0, bw1, bw2) {
+        this.firstThirdBracket = bw0;
+        this.secondThirdBracket = bw1;
+        this.fifthBracket = bw2;
+    }
+}
 
 class RelativeIntervalController {
     constructor(bracketWidget) {
@@ -191,7 +204,7 @@ function noteOn(index) {
         return;
     }
     var note = gNoteWidgets[index];
-    note.backgroundOpacity = 0.8;
+    note.backgroundOpacity = 0.9;
 
     if(!controllerBypass) {
         intervalController.noteOn(note, index);
@@ -204,12 +217,14 @@ function noteOff(index) {
     }
     var note = gNoteWidgets[index];
     var frame = getCurrentFrame();
+    
     note.addAnimation(makeAnimation(
         {
-            "backgroundOpacity" : makeInterpolator(0.8, 0.38),
+            "backgroundOpacity" : makeInterpolator(0.9, 0.4),
         }
     )
     , frame, frame + NOTE_FADE);
+    //note.backgroundOpacity = 0.4;
 }
 
 function getCurrentFrame() {
@@ -217,6 +232,82 @@ function getCurrentFrame() {
     var frame = Math.floor(time*60.0/1000.0);
     return frame;    
 }
+
+var MAJOR_WIDGETS_VISIBLE = false;
+var MINOR_WIDGETS_VISIBLE = false;
+
+function showMajorWidgets() {
+    MAJOR_WIDGETS_VISIBLE = true;
+
+    for(var i = 0; i < gMajorWidgets.length; i++) {
+        var mw = gMajorWidgets[i];
+        var frame = getCurrentFrame();
+
+        mw.clearAnimations();
+        
+        mw.addAnimation(makeAnimation(
+            {
+                "backgroundOpacity" : makeInterpolator(0.0, 1.0),
+            }
+        )
+        , frame, frame + DOT_FADE);
+    }
+}
+
+function hideMajorWidgets() {
+    MAJOR_WIDGETS_VISIBLE = false;
+
+    for(var i = 0; i < gMajorWidgets.length; i++) {
+        var mw = gMajorWidgets[i];
+        var frame = getCurrentFrame();
+
+        mw.clearAnimations();
+        
+        mw.addAnimation(makeAnimation(
+            {
+                "backgroundOpacity" : makeInterpolator(1.0, 0.0),
+            }
+        )
+        , frame, frame + DOT_FADE);
+    }
+}
+
+function showMinorWidgets() {
+    MINOR_WIDGETS_VISIBLE = true;
+
+    for(var i = 0; i < gMinorWidgets.length; i++) {
+        var mw = gMinorWidgets[i];
+        var frame = getCurrentFrame();
+        
+        mw.clearAnimations();
+
+        mw.addAnimation(makeAnimation(
+            {
+                "backgroundOpacity" : makeInterpolator(0.0, 1.0),
+            }
+        )
+        , frame, frame + DOT_FADE);
+    }
+}
+
+function hideMinorWidgets() {
+    MINOR_WIDGETS_VISIBLE = false;
+
+    for(var i = 0; i < gMinorWidgets.length; i++) {
+        var mw = gMinorWidgets[i];
+        var frame = getCurrentFrame();
+        
+        mw.clearAnimations();
+
+        mw.addAnimation(makeAnimation(
+            {
+                "backgroundOpacity" : makeInterpolator(1.0, 0.0),
+            }
+        )
+        , frame, frame + DOT_FADE);
+    }
+}
+
 
 function init() {
     gCanvas = document.getElementById("myCanvas");
@@ -241,6 +332,8 @@ function init() {
     var minorHasNote = [true, false, true, true, false, true, false, true, true, false, true, false];
 
     gNoteWidgets = [];
+    gMajorWidgets = [];
+    gMinorWidgets = [];
 
     var noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
@@ -250,12 +343,32 @@ function init() {
     // initialize bracket widgets
 
     bracketWidget = new BracketWidget(40, BRACKET_HIDDEN_POS, 850, 0, "boop");
+    bracketWidget1 = new BracketWidget(40, BRACKET_HIDDEN_POS, 850, 0, "coop");
+    bracketWidget2 = new BracketWidget(40, BRACKET_HIDDEN_POS, 850, 0, "doop");
 
     gContainer.addObject(bracketWidget);
+    gContainer.addObject(bracketWidget1);
+    gContainer.addObject(bracketWidget2);
 
     controllerMode = CTL_RANDOM;
     controllerBypass = false;
     intervalController = new RandomIntervalController(bracketWidget);
+
+    // create table
+
+    var tx = 1300;
+
+    for(var i = 0; i < 13; i++) {
+        var text = intervals[i].quality + " " + intervals[i].number;
+        var ivWidget = new TextWidget(tx, TABLE_YPOS + i * TABLE_ROW_HEIGHT, NOTE_WIDTH, NOTE_WIDTH, text);
+        ivWidget.backgroundOpacity = 0.0;
+        ivWidget.fontSize = 32;
+        gContainer.addObject(ivWidget);
+    }
+
+    // create virtual "keyboard"
+
+    var degreeShortNames = ["P1", "m2", "M2", "m3", "M3", "P4", "tt", "P5", "m6", "M6", "m7", "M7", "PO"];
 
     for(var i = 0; i < 13; i++) {
         var topName = intervals[i%12].quality;
@@ -275,21 +388,33 @@ function init() {
         gNoteWidgets.push(noteWidget);
 
         if(majorHasNote[i%12]) {
-            var majWidget = new TextWidget(xPosDot, YPOS + 100, DOT_WIDTH, DOT_WIDTH, "" );
+            var majWidget = new TextWidget(xPosDot, YPOS + 100, DOT_WIDTH, DOT_WIDTH, degreeShortNames[i] );
+            majWidget.fontSize = 20;
+            majWidget.r = 0;
+            majWidget.g = 102;
+            majWidget.b = 32;
             majWidget.backgroundColor = "rgba(0, 255, 80, 1.0)";
+            majWidget.backgroundOpacity = 0.0;
             majWidget.backgroundMode = TEXTWIDGET_BACKGROUNDMODE_CIRCLE;
             majWidget.isMajor = true;
             gContainer.addObject(majWidget);
             gNotes.push(majWidget);
+            gMajorWidgets.push(majWidget);
         }
-
+        deg = 0;
         if(minorHasNote[i%12]) {
-            var minWidget = new TextWidget(xPosDot, YPOS + 160, DOT_WIDTH, DOT_WIDTH, "");
+            var minWidget = new TextWidget(xPosDot, YPOS + 160, DOT_WIDTH, DOT_WIDTH, degreeShortNames[i]);
+            minWidget.fontSize = 20;
+            minWidget.r = 102;
+            minWidget.g = 0;
+            minWidget.b = 58;
             minWidget.backgroundColor = "rgba(210, 0, 120, 1.0)";
+            minWidget.backgroundOpacity = 0.0;
             minWidget.backgroundMode = TEXTWIDGET_BACKGROUNDMODE_CIRCLE;
             minWidget.isMajor = false;
             gContainer.addObject(minWidget);
             gNotes.push(minWidget);
+            gMinorWidgets.push(minWidget);
         } 
 
         xPos += NOTE_WIDTH + NOTE_MARGIN;
@@ -300,11 +425,30 @@ function init() {
         var code = evt.keyCode;
         console.log(code);
 
-        if(code == 66) {
+        if(code == 66) { // "b"
             controllerBypass = !controllerBypass;
         }
-
-        if(code == 73) {
+        else if(code == 49) { // "1"
+            if(!MAJOR_WIDGETS_VISIBLE) {
+                showMajorWidgets();
+            } else {
+                hideMajorWidgets();
+            }
+        }
+        else if(code == 50) { // "2"
+            if(!MINOR_WIDGETS_VISIBLE) {
+                showMinorWidgets();
+            } else {
+                hideMinorWidgets();
+            }
+        } 
+        else if(code === 51) {
+            bracketWidget.text = "boo";
+            bracketWidget.x = 0;//this.firstIntervalNote.x + NOTE_WIDTH / 2;
+            bracketWidget.width = 0;//note.x - this.firstIntervalNote.x;
+            bracketWidget.y = 2000;
+        } 
+        else if(code == 73) { // "i"
             //intervalDisplayState = 0;
             //resetIntervalState();
             console.log("SHOULD FLIP!!!");
@@ -317,7 +461,10 @@ function init() {
                 controllerMode = CTL_RANDOM;
                 intervalController = new RandomIntervalController(bracketWidget);
             }
-        }
+        } else if(code === 67) { // "c"
+            controllerMode = CTL_CHORD;
+            intervalController = new ChordIntervalController(bracketWidget, bracketWidget1, bracketWidget2);
+        } 
     }, false);
 
     window.addEventListener("keyup", function(evt) {
