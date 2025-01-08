@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flying Circle with CCapture</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #000;
+        }
+        /* Ensure the canvas takes up the full window size */
+        #myCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas"></canvas>
+    <script src="../../ext/CCapture.all.min.js"></script>
+    <script>
+        const canvas = document.querySelector('#myCanvas');
+        // Set the canvas size explicitly for 1920x1080 resolution
+        canvas.width = 800;
+        canvas.height = 600;
+
+        const ctx = canvas.getContext('2d', { preserveDrawingBuffer: true });
+        const radius = 20; // Radius of the moving circle
+        const circleRadius = 300; // Radius of the path the circle will follow
+        let angle = 0; // Starting angle for the circle
+
+        // Set up the capture with desired settings
+        const capturer = new CCapture({
+            format: 'png',
+            framerate: 60,
+            verbose: true,
+            quality: 100, // Max quality
+        });
+
+        let isCapturing = false;
+
+        function draw() {
+            // Clear the canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Calculate the circle's position
+            const x = canvas.width / 2 + circleRadius * Math.cos(angle);
+            const y = canvas.height / 2 + circleRadius * Math.sin(angle);
+
+            // Draw the circle
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#00FF00'; // Circle color (green)
+            ctx.fill();
+
+            // Update the angle for the next frame
+            angle += 0.02;
+
+            // Capture the canvas frame if capturing
+            if (isCapturing) {
+                capturer.capture(canvas);
+            }
+
+            // Request the next frame
+            requestAnimationFrame(draw);
+        }
+
+        // Start the animation and the capture
+        function startCapture() {
+            capturer.start();
+            isCapturing = true;
+        }
+
+        // Stop the capture and save the result
+        function stopCapture() {
+            isCapturing = false;
+            capturer.stop();
+            capturer.save();
+        }
+
+        // Set up key bindings to start/stop capture with keys
+        window.addEventListener('keydown', (event) => {
+            if (event.key === 's') {
+                startCapture();
+            } else if (event.key === 'e') {
+                stopCapture();
+            }
+        });
+
+        // Start the animation without capturing initially
+        draw();
+    </script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interval Bracket</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="800" height="600"></canvas>
+
+    <script>
+        class IntervalWidget {
+            constructor(x1, x2, y, letterString) {
+                this.x1 = x1;
+                this.x2 = x2;
+                this.y = y;
+                this.letterString = letterString;
+            }
+
+            render(ctx) {
+                let x1 = this.x1;
+                let x2 = this.x2;
+                let y = this.y;
+                let letterString = this.letterString;
+
+                let midX = (x1 + x2) / 2;
+
+                ctx.font = "30px futura";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                
+                ctx.fillStyle = 'red';
+                let textMeasure = ctx.measureText(letterString);
+                ctx.fillText(letterString, midX, y);
+
+                ctx.strokeStyle = "blue";
+                ctx.lineWidth = 6;
+                
+                ctx.beginPath();
+                ctx.moveTo(x1, y-50);
+                ctx.lineTo(x2, y-50);
+                ctx.stroke();
+
+                let arcRadius = 16;
+                let arcHeight = 20;
+
+                ctx.strokeStyle = "white";
+                
+                ctx.beginPath();
+                ctx.moveTo(x1 + arcRadius, y);
+                ctx.lineTo(midX - textMeasure.width/2 - 6, y);
+                ctx.arcTo(x1, y, x1, y - arcHeight, arcRadius);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(x2 - arcRadius, y);
+                ctx.lineTo(midX + textMeasure.width/2 + 6, y);
+                ctx.arcTo(x2, y, x2, y - arcHeight, arcRadius);
+                ctx.stroke();
+            }
+
+        }
+
+
+        
+        // Example usage
+        const canvas = document.getElementById("myCanvas");
+        const ctx = canvas.getContext("2d");
+
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, 800, 600);
+
+        // Draw example brackets
+        let b1 = new IntervalWidget(50, 150, 100, "W");
+        let b2 = new IntervalWidget(100, 300, 200, "H");
+
+        b1.render(ctx);
+        b2.render(ctx);
+
+        //drawIntervalBracket(ctx, 100, 50, 150, "W");
+        //drawIntervalBracket(ctx, 200, 100, 500, "H");
+    </script>
+</body>
+</html>
