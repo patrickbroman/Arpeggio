@@ -55,10 +55,10 @@ class Digikeys {
     static HIGHLIGHTING = 1;
 
     // Define color constants for different states
-    static COLOR_NOT_HIGHLIGHTED_NOT_PRESSED = "#252525";
+/*    static COLOR_NOT_HIGHLIGHTED_NOT_PRESSED = "#252525";
     static COLOR_NOT_HIGHLIGHTED_PRESSED = "#555";
-    static COLOR_HIGHLIGHTED_NOT_PRESSED = "#A05F8C";
-    static COLOR_HIGHLIGHTED_PRESSED = brightenColor(Digikeys.COLOR_HIGHLIGHTED_NOT_PRESSED, 0.5);
+    static COLOR_HIGHLIGHTED_NOT_PRESSED = "#f00";
+    static COLOR_HIGHLIGHTED_PRESSED = brightenColor(Digikeys.COLOR_HIGHLIGHTED_NOT_PRESSED, 0.5); */
     
     static INTERVAL_MODE_STEPS = 0;
     static INTERVAL_MODE_NAMES = 1;
@@ -74,6 +74,9 @@ class Digikeys {
         this.animating = false;
         this.inputMode = Digikeys.PLAYING;
         this.noteWidgets = [];
+
+        this.backgroundColor = "#252525";
+        this.highlightColor = "#f00";
 
         this.accidentalMode = Digikeys.ACCIDENTAL_MODE_FLATS;
 
@@ -112,7 +115,8 @@ class Digikeys {
             );
             noteWidget.index = i;
             noteWidget.backgroundMode = TEXTWIDGET_BACKGROUNDMODE_CIRCLE;
-            noteWidget.backgroundColor = Digikeys.COLOR_NOT_HIGHLIGHTED_NOT_PRESSED;
+            noteWidget.backgroundColor = this.backgroundColor;
+            noteWidget.highlightedColor = this.highlightColor;
             noteWidget.highlighted = false;
             noteWidget.pressed = false; // Track pressed state
             noteWidget.fontSize = 34;
@@ -133,17 +137,18 @@ class Digikeys {
         this.rangeWidgets.push(w);
     }
 
-    updateNoteWidgetColor(noteWidget) {
+/*    updateNoteWidgetColor(noteWidget) {
         if (noteWidget.highlighted && noteWidget.pressed) {
-            noteWidget.backgroundColor = Digikeys.COLOR_HIGHLIGHTED_PRESSED;
+            noteWidget.backgroundColor =  brightenColor(this.highlightColor, 0.5);
+            console.log("HIGHLIGHTED PRESSED! : " + noteWidget.backgroundColor);
         } else if (noteWidget.highlighted && !noteWidget.pressed) {
-            noteWidget.backgroundColor = Digikeys.COLOR_HIGHLIGHTED_NOT_PRESSED;
+            noteWidget.backgroundColor = this.highlightColor;
         } else if (!noteWidget.highlighted && noteWidget.pressed) {
-            noteWidget.backgroundColor = Digikeys.COLOR_NOT_HIGHLIGHTED_PRESSED;
+            noteWidget.backgroundColor = brightenColor(this.backgroundColor, 0.5);
         } else {
-            noteWidget.backgroundColor = Digikeys.COLOR_NOT_HIGHLIGHTED_NOT_PRESSED;
+            noteWidget.backgroundColor = this.backgroundColor;https://www.youtube.com/watch?v=eoSuz5nNsDk
         }
-    }
+    } */
 
     noteEvent(noteNumber, eventType) {
         const noteWidget = this.noteNumberMap[noteNumber];
@@ -164,7 +169,7 @@ class Digikeys {
             }
         }
         // Update the widget's color based on its state
-        this.updateNoteWidgetColor(noteWidget);
+        //this.updateNoteWidgetColor(noteWidget);
     }
 
     updateIntervals() {
@@ -206,15 +211,24 @@ class Digikeys {
         });
     }
 
+    toggleHighlightColor() {
+        if(this.highlightColor === '#f00') {
+            this.highlightColor = '#00f';
+        } else {
+            this.highlightColor = '#f00';
+        }
+    }
+
     keyEvent(event) {
         if (event.eventType === "keydown") {
             if(event.key === 'f') {
                 this.toggleAccidentals();
-            }
-            if (event.key === "i") {
+            } else if (event.key === "i") {
                 console.log("TOGGLING INTERVAL MODE!");
                 this.showIntervals = !this.showIntervals;
-            } else if (event.key === "h") {
+            } else if (event.key === "l") {
+                this.toggleHighlightColor();
+            }  else if (event.key === "h") {
                 console.log("TOGGLING INPUT MODE!");
                 this.inputMode = this.inputMode === Digikeys.PLAYING
                     ? Digikeys.HIGHLIGHTING
@@ -314,9 +328,9 @@ async function init() {
     gMidi = new MIDIInterface();
     gDigikeys = new Digikeys(300, gMidi, gInput);
 
-    gDigikeys.addRangeWidget(12, 24, 24, "C major");
-    gDigikeys.addRangeWidget(24, 36, 24, "C major");
-    gDigikeys.addRangeWidget(12+9, 24+9, 72, "A minor");
+    gDigikeys.addRangeWidget(17, 29, 24, "F major");
+    gDigikeys.addRangeWidget(29, 41, 24, "F major");
+    gDigikeys.addRangeWidget(12+9+5, 24+9+5, 72, "D minor");
 
     gStartTime = performance.now();
     window.requestAnimationFrame(render);

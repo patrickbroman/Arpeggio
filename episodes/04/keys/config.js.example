@@ -1,0 +1,5 @@
+var Config = {
+    recording: false,
+    recordingDuration: 60*4,
+    keyIndex: 0
+};
